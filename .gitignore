@@ -1,0 +1,6 @@
+.env
+node_modules/
+preload.js  # 不使用につき
+
+models/
+motions/
