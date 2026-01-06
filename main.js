@@ -1,4 +1,4 @@
-const { app, BrowserWindow, screen } = require('electron');
+const { app, BrowserWindow, screen, ipcMain } = require('electron');
 const path = require('path');
 require('dotenv').config();
 
@@ -32,11 +32,20 @@ function createWindow() {
   });
 
   win.setMenuBarVisibility(false);   // 右クリックで出るあのウィンドウ
+
   win.loadFile('index.html', {
     query: {
       modelPath: modelPath,
       vmdPath: vmdpPath,
     }
+  });
+
+  // 透過ウィンドウ化（イベント自体は保持）
+  win.setIgnoreMouseEvents(true, { forward: true });
+  // 透過ウィンドウ切り替え
+  ipcMain.on('mouse-through:set-ignore', (event, ignore) => {
+    //console.log(`setIgnore: ${ignore}`);
+    win.setIgnoreMouseEvents(ignore, { forward: true });
   });
 
   //win.webContents.openDevTools();  // 開発者ツールを開く エラー対処用
