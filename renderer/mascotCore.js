@@ -43,9 +43,13 @@ export function createMascotCore({ modelPath, vmdPath, width, height }) {
   // 白飛び対策
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.4;
+  renderer.toneMappingExposure = 0.6;
 
   document.body.appendChild(renderer.domElement);
+
+  // 影
+  const canvas = renderer.domElement;
+  canvas.style.filter = 'drop-shadow(-25px 15px 4px rgba(0, 0, 0, 0.6))';  // (x方向, y方向, ぼかし, 色味(r, g, b, 透明度))
 
   // ⚠️テスト用ボックス・・・のはずが、pmxの接触判定がコレに依存してるため必要⚠️
   // 原因不明
@@ -166,6 +170,45 @@ export function createMascotCore({ modelPath, vmdPath, width, height }) {
 
     animate();
   }
+
+  let dragging = false;
+  let rafPending = false;
+
+  function onMouseMoveForHover(e) {
+      if (dragging) return; // ドラッグ中はhover判定しない
+    }
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (!e.altKey) return;
+    if (!lastHover) return;
+    dragging = true;
+
+    canvas.setPointerCapture(e.pointerId);
+    window.windowControl?.dragStart();
+    e.preventDefault();
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    
+    if (!rafPending) {
+      rafPending = true;  // 移動処理はスタックしない（ペンディングする）
+      requestAnimationFrame(() => {
+        rafPending = false;
+        window.windowControl?.dragMove();
+      });
+    }
+    e.preventDefault();
+  });
+
+  canvas.addEventListener('pointerup', (e) => {
+    if (!dragging) return;
+    dragging = false;
+    window.windowControl?.dragEnd();
+
+    try { canvas.releasePointerCapture(e.pointerId); } catch {}
+    e.preventDefault();
+  });
 
   // 外から触りたい最低限のものだけ返す
   return {
